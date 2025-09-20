@@ -1,27 +1,41 @@
-[build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "nano-vllm"
+name = "nanovllm"
 version = "0.2.0"
 authors = [{ name = "Xingkai Yu" }]
 license = "MIT"
 license-files = ["LICENSE"]
 readme = "README.md"
 description = "a lightweight vLLM implementation built from scratch"
-requires-python = ">=3.10,<3.13"
+requires-python = "==3.12.*"
 dependencies = [
-    "torch>=2.4.0",
-    "triton>=3.0.0",
-    "transformers>=4.51.0",
+    "torch==2.8.0+cu129",
+    "triton",
+    "transformers>=4.51.3",
     "flash-attn",
     "xxhash",
 ]
 
-[project.urls]
-Homepage="https://github.com/GeeeekExplorer/nano-vllm"
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["nanovllm*"]
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu129" },
+]
+torchvision = [
+  { index = "pytorch-cu129" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
+
+[tool.uv.extra-build-dependencies]
+flash-attn = [{ requirement = "torch", match-runtime = true }]
+
+[tool.uv.extra-build-variables]
+flash-attn = { FLASH_ATTENTION_SKIP_CUDA_BUILD = "TRUE" }
+
+.

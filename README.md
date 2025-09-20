@@ -10,8 +10,11 @@ A lightweight vLLM implementation built from scratch.
 
 ## Installation
 
+Modified to support `uv`
+
 ```bash
-pip install git+https://github.com/GeeeekExplorer/nano-vllm.git
+uv sync
+source .venv/bin/activate
 ```
 
 ## Manual Download
