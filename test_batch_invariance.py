@@ -3,6 +3,8 @@ import time
 from nanovllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 
+from batch_invariant_ops import set_batch_invariant_mode
+
 def main():
     # Create output directory if it doesn't exist
     output_dir = "output"
@@ -41,47 +43,74 @@ def main():
     print(f"Random batch sizes: {batch_sizes}")
     print(f"Total batches: {len(batch_sizes)}, Total requests: {sum(batch_sizes)}")
 
-    start_time = time.time()
-    all_outputs = []
+    results_comparison = {}
 
-    for batch_idx, batch_size in enumerate(batch_sizes):
-        prompts = [formatted_prompt] * batch_size
-        results = llm.generate(prompts, sampling_params, use_tqdm=False)
-        all_outputs.extend([result['text'] for result in results])
-
-        if (batch_idx + 1) % max(1, len(batch_sizes) // 10) == 0:
-            print(f"  Progress: {len(all_outputs)}/{total_requests} requests ({batch_idx + 1}/{len(batch_sizes)} batches)")
-
-    end_time = time.time()
-
-    # Save outputs
-    for i, output_text in enumerate(all_outputs):
-        with open(os.path.join(output_dir, f"output_{i+1}.txt"), "w") as f:
-            f.write(output_text)
-
-    # Analyze results
-    unique_outputs = set(all_outputs)
-
-    print(f"\n{'='*60}")
-    print("RESULTS")
-    print(f"{'='*60}")
-    print(f"Time: {end_time - start_time:.2f}s")
-    print(f"Total samples: {len(all_outputs)}")
-    print(f"Unique samples: {len(unique_outputs)}")
-    print(f"Batch sizes used: {batch_sizes}")
-    print(f"Status: {'✓ PASS - All outputs identical' if len(unique_outputs) == 1 else f'✗ FAIL - Found {len(unique_outputs)} different outputs'}")
-
-    # Print all different outputs
-    if len(unique_outputs) > 1:
+    # Test with both modes: invariant mode disabled and enabled
+    for invariant_mode in [False, True]:
+        mode_name = "WITH batch invariance" if invariant_mode else "WITHOUT batch invariance"
         print(f"\n{'='*60}")
-        print("DIFFERENT OUTPUTS")
+        print(f"Testing {mode_name}")
         print(f"{'='*60}")
-        for i, output in enumerate(unique_outputs, 1):
-            count = all_outputs.count(output)
-            print(f"\nOutput #{i} (appeared {count} times):")
-            print("-" * 60)
-            print(output)
-            print("-" * 60)
+
+        start_time = time.time()
+        all_outputs = []
+
+        with set_batch_invariant_mode(invariant_mode):
+            for batch_idx, batch_size in enumerate(batch_sizes):
+                prompts = [formatted_prompt] * batch_size
+                results = llm.generate(prompts, sampling_params, use_tqdm=False)
+                all_outputs.extend([result['text'] for result in results])
+
+                if (batch_idx + 1) % max(1, len(batch_sizes) // 10) == 0:
+                    print(f"  Progress: {len(all_outputs)}/{total_requests} requests ({batch_idx + 1}/{len(batch_sizes)} batches)")
+
+        end_time = time.time()
+
+        # Save outputs
+        mode_dir = os.path.join(output_dir, "with_invariance" if invariant_mode else "without_invariance")
+        os.makedirs(mode_dir, exist_ok=True)
+        for i, output_text in enumerate(all_outputs):
+            with open(os.path.join(mode_dir, f"output_{i+1}.txt"), "w") as f:
+                f.write(output_text)
+
+        # Analyze results
+        unique_outputs = set(all_outputs)
+
+        print(f"\nResults for {mode_name}:")
+        print(f"  Time: {end_time - start_time:.2f}s")
+        print(f"  Total samples: {len(all_outputs)}")
+        print(f"  Unique samples: {len(unique_outputs)}")
+        print(f"  Status: {'✓ PASS - All outputs identical' if len(unique_outputs) == 1 else f'✗ FAIL - Found {len(unique_outputs)} different outputs'}")
+
+        # Store results for comparison
+        results_comparison[mode_name] = {
+            'time': end_time - start_time,
+            'unique_count': len(unique_outputs),
+            'outputs': all_outputs,
+            'unique_outputs': unique_outputs
+        }
+
+        # Print all different outputs
+        if len(unique_outputs) > 1:
+            print(f"\n  Different outputs for {mode_name}:")
+            for i, output in enumerate(unique_outputs, 1):
+                count = all_outputs.count(output)
+                print(f"\n  Output #{i} (appeared {count} times):")
+                print("  " + "-" * 58)
+                print("  " + output[:100] + ("..." if len(output) > 100 else ""))
+                print("  " + "-" * 58)
+
+    # Final comparison
+    print(f"\n{'='*60}")
+    print("COMPARISON SUMMARY")
+    print(f"{'='*60}")
+    print(f"Batch sizes used: {batch_sizes}")
+    print()
+    print(f"{'Mode':<30} {'Unique Outputs':<20} {'Time (s)':<15} {'Status'}")
+    print("-" * 70)
+    for mode_name, results in results_comparison.items():
+        status = "PASS" if results['unique_count'] == 1 else "FAIL"
+        print(f"{mode_name:<30} {results['unique_count']:<20} {results['time']:<15.2f} {status}")
 
 if __name__ == "__main__":
     main()
