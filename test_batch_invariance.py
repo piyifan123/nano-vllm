@@ -17,7 +17,7 @@ def main():
     llm = LLM(path, enforce_eager=True, tensor_parallel_size=1)
 
     # Use temperature=0 for greedy and deterministic output, with logprobs enabled
-    sampling_params = SamplingParams(temperature=0, max_tokens=32, logprobs=True)
+    sampling_params = SamplingParams(temperature=0, max_tokens=1000, logprobs=True)
 
     prompt = "Generate 100 random numbers. Go directly into it, don't say Sure and don't say here are numbers. Just start with a number."
     formatted_prompt = tokenizer.apply_chat_template(
@@ -30,7 +30,7 @@ def main():
     import random
 
     random.seed(42)
-    total_requests = 500
+    total_requests = 100
 
     # Generate random batch sizes that sum to total_requests with all unique values
     batch_sizes = []
