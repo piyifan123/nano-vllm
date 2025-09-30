@@ -62,10 +62,23 @@ class Scheduler:
         self.block_manager.deallocate(seq)
         self.waiting.appendleft(seq)
 
-    def postprocess(self, seqs: list[Sequence], token_ids: list[int]) -> list[bool]:
-        for seq, token_id in zip(seqs, token_ids):
-            seq.append_token(token_id)
-            if (not seq.ignore_eos and token_id == self.eos) or seq.num_completion_tokens == seq.max_tokens:
-                seq.status = SequenceStatus.FINISHED
-                self.block_manager.deallocate(seq)
-                self.running.remove(seq)
+    def postprocess(self, seqs: list[Sequence], result) -> list[bool]:
+        # Handle both (token_ids, logprobs) tuple and just token_ids
+        if isinstance(result, tuple):
+            token_ids, logprobs = result
+            for seq, token_id, logprob in zip(seqs, token_ids, logprobs):
+                seq.append_token(token_id)
+                if seq.logprobs:
+                    seq.completion_logprobs.append(logprob)
+                if (not seq.ignore_eos and token_id == self.eos) or seq.num_completion_tokens == seq.max_tokens:
+                    seq.status = SequenceStatus.FINISHED
+                    self.block_manager.deallocate(seq)
+                    self.running.remove(seq)
+        else:
+            token_ids = result
+            for seq, token_id in zip(seqs, token_ids):
+                seq.append_token(token_id)
+                if (not seq.ignore_eos and token_id == self.eos) or seq.num_completion_tokens == seq.max_tokens:
+                    seq.status = SequenceStatus.FINISHED
+                    self.block_manager.deallocate(seq)
+                    self.running.remove(seq)
