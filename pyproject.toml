@@ -13,6 +13,7 @@ dependencies = [
     "transformers>=4.51.3",
     "flash-attn",
     "xxhash",
+    "batch-invariant-ops"
 ]
 
 [build-system]
@@ -26,6 +27,7 @@ torch = [
 torchvision = [
   { index = "pytorch-cu129" },
 ]
+batch-invariant-ops = { git = "https://github.com/thinking-machines-lab/batch_invariant_ops" }
 
 [[tool.uv.index]]
 name = "pytorch-cu129"

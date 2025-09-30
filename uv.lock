@@ -3,6 +3,15 @@ revision = 3
 requires-python = "==3.12.*"
 
 [[package]]
+name = "batch-invariant-ops"
+version = "0.1.0"
+source = { git = "https://github.com/thinking-machines-lab/batch_invariant_ops#9bfcaf6c29c5d1413971c8fb16da325fa1602d7d" }
+dependencies = [
+    { name = "torch" },
+    { name = "triton" },
+]
+
+[[package]]
 name = "certifi"
 version = "2025.8.3"
 source = { registry = "https://pypi.org/simple" }
@@ -164,6 +173,7 @@ name = "nanovllm"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "batch-invariant-ops" },
     { name = "flash-attn" },
     { name = "torch" },
     { name = "transformers" },
@@ -173,6 +183,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "batch-invariant-ops", git = "https://github.com/thinking-machines-lab/batch_invariant_ops" },
     { name = "flash-attn" },
     { name = "torch", specifier = "==2.8.0+cu129", index = "https://download.pytorch.org/whl/cu129" },
     { name = "transformers", specifier = ">=4.51.3" },
