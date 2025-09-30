@@ -204,13 +204,31 @@ class ModelRunner:
             graph.replay()
             return self.model.compute_logits(graph_vars["outputs"][:bs])
 
-    def run(self, seqs: list[Sequence], is_prefill: bool) -> list[int]:
+    def run(self, seqs: list[Sequence], is_prefill: bool) -> list[int] | tuple[list[int], list[float]]:
         input_ids, positions = self.prepare_prefill(seqs) if is_prefill else self.prepare_decode(seqs)
         temperatures = self.prepare_sample(seqs) if self.rank == 0 else None
         logits = self.run_model(input_ids, positions, is_prefill)
-        token_ids = self.sampler(logits, temperatures).tolist() if self.rank == 0 else None
-        reset_context()
-        return token_ids
+
+        if self.rank == 0:
+            # Check if any sequence needs logprobs
+            need_logprobs = any(seq.logprobs for seq in seqs)
+            self.sampler.return_logprobs = need_logprobs
+
+            result = self.sampler(logits, temperatures)
+
+            if need_logprobs:
+                token_ids, logprobs = result
+                token_ids = token_ids.tolist()
+                logprobs = logprobs.tolist()
+                reset_context()
+                return token_ids, logprobs
+            else:
+                token_ids = result.tolist()
+                reset_context()
+                return token_ids
+        else:
+            reset_context()
+            return None
 
     @torch.inference_mode()
     def capture_cudagraph(self):
