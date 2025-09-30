@@ -13,7 +13,8 @@ dependencies = [
     "transformers>=4.51.3",
     "flash-attn",
     "xxhash",
-    "batch-invariant-ops"
+    "batch-invariant-ops",
+    "flash_attn_3"
 ]
 
 [build-system]
@@ -28,6 +29,8 @@ torchvision = [
   { index = "pytorch-cu129" },
 ]
 batch-invariant-ops = { git = "https://github.com/thinking-machines-lab/batch_invariant_ops" }
+# 3rd party prebuilt FA3 wheel: https://windreamer.github.io/flash-attention3-wheels/
+flash_attn_3 = { url = "https://github.com/windreamer/flash-attention3-wheels/releases/download/2025.09.28/flash_attn_3-3.0.0b1%2B20250928.cu129torch280cxx11abitrue.5059fd-cp39-abi3-linux_x86_64.whl" }
 
 [[tool.uv.index]]
 name = "pytorch-cu129"
